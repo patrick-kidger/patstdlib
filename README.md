@@ -4,7 +4,7 @@ Some standard pieces I find useful: fonts, subfigures, algorithms, labeled enums
 
 ## Documentation
 
-Please see the inline documentation attached to each object. A full list of all available functionality can be found in `src/lib.typ`.
+Please see the inline documentation attached to each object. A full list of all available functionality can be found in [`src/lib.typ`](https://github.com/patrick-kidger/patstdlib/blob/main/src/lib.typ).
 
 ## Functionality
 
@@ -29,6 +29,7 @@ In @step:baz then ...
 
 ```typst
 #show: enable-referable-subfigures
+#set enum(full: true)
 
 #figure(
   caption: [Main caption],

@@ -10,7 +10,6 @@
     let size = 1em * (fi.scaling.at(font) / fi.scaling.at(text.font))
     text(font: font, size: size, body)
 }
-#let as-title(body) = _as-font("title-font", body)
 #let as-normal(body) = _as-font("normal-font", body)
 #let as-math(body) = _as-font("math-font", body)  // Not useful, $..$ exists.
 #let as-code(body) = _as-font("code-font", body)  // Not useful, `..` exists.
@@ -24,11 +23,12 @@
     math-font: "New Computer Modern Math",
     code-font: "DejaVu Sans Mono",
     bio-font: "DejaVu Sans Mono",
-    title-size: 20pt,
-    text-size: 11pt,
-    fallback-text: false,
-    smallcaps-backup: false,
     scaling: ("New Computer Modern": 100%, "New Computer Modern Math": 100%, "DejaVu Sans Mono": 91%),
+    title-size: 20pt,
+    heading-sizes: (13pt, 12pt, 11pt, 10pt),
+    text-size: 10pt,
+    fallback-fonts: false,
+    fallback-smallcaps: false,
     doc,
 ) = {
     // Normalize to lower, which is how `context text.font` is stored.
@@ -51,6 +51,7 @@
         code-font: code-font,
         bio-font: bio-font,
         title-size: title-size,
+        heading-sizes: heading-sizes,
         text-size: text-size,
         scaling: scaling,
     )
@@ -60,35 +61,28 @@
         _font-info-state.update(font-info-to-set)
     }
 
-    // Numbering
-    set page(numbering: "1")
-    set heading(numbering: "1.1")
-
-    // Layout
-    set par(justify: true)
-    set page("a4", margin: (top: 40pt, x: 40pt, bottom: 60pt))
-
-    // Font
-    set text(font: normal-font, size: text-size * scaling.at(normal-font), fallback: fallback-text)
-    show heading: set text(font: heading-font)
+    // Font sizes
+    set text(font: normal-font, size: text-size * scaling.at(normal-font))
+    show title: set text(font: title-font, size: title-size * scaling.at(title-font))
+    show heading: set text(font: heading-font, size: heading-sizes.last() * scaling.at(heading-font))
+    show: body => heading-sizes
+        .slice(0, -1)
+        .enumerate(start: 1)
+        .fold(body, (body, (level, size)) => {
+            show heading.where(level: level): set text(size: size * scaling.at(heading-font))
+            body
+        })
     show math.equation: set text(font: math-font, size: 1em * scaling.at(math-font))
     show raw: set text(font: code-font, size: 1em * scaling.at(code-font))
-    show smallcaps: doc => if smallcaps-backup {text(size: 0.8em, upper(doc))} else {doc}
+
+    // Misc
+    set text(fallback: fallback-fonts)
+    show title: set par(justify: false)
+    show title: set text(hyphenate: false)
+    show smallcaps: it => if fallback-smallcaps { text(size: 0.8em, upper(it)) } else { it }
 
     doc
 }
-
-/// Styles text as a title.
-/// - body (str, content): the text to use for the title.
-/// -> content
-#let title(body) = context {
-    let fi = font-info()
-    set par(justify: false)
-    set text(size: fi.title-size, hyphenate: false, weight: "bold")
-    as-title(body)
-}
-// Just a rename for usage in `#style`, which has a local variable `title`.
-#let _title = title
 
 /// A simple style for the top matter.
 ///
@@ -135,6 +129,14 @@
 ) = {
     // Metadata
     set document(title: title)
+
+    // Numbering
+    set page(numbering: "1")
+    set heading(numbering: "1.1")
+
+    // Layout
+    set par(justify: true)
+    set page("a4", margin: (top: 40pt, x: 40pt, bottom: 60pt))
 
     // Header
     set page(
@@ -195,7 +197,7 @@
             ..authors.map(author => [
                 *#author.name* \
                 #if author.affiliation != none [#author.affiliation#linebreak()]
-                #if author.email != none {as-code(author.email)}
+                #if author.email != none { as-code(author.email) }
             ]),
         )
     }
@@ -238,6 +240,6 @@
     set heading(numbering: "A.1", supplement: "Appendix")
     counter(heading).update(0)
     assert.ne(title, auto, message: "Must specify a title: `#show appendix.with(title: ...)`.")
-    if title != none { _title(title) }
+    if title != none { std.title(title) }
     doc
 }
