@@ -16,18 +16,36 @@
 #let as-bio(body) = _as-font("bio-font", body)
 
 /// Sets fonts and sizes across the document.
+///
+/// By default this just recapitulates Typst defaults. However my own favourite choices for academic writing are:
+/// ```typst
+/// #show: fonts.with(
+///     title-font: "New Computer Modern",
+///     heading-font: "New Computer Modern",
+///     normal-font: "New Computer Modern",
+///     title-size: 20pt,
+///     heading-sizes: (13pt, 12pt, 11pt, 10pt),
+///     text-size: 10pt,
+///     fallback-fonts: false,
+/// )
+/// ```
 #let fonts(
-    title-font: "New Computer Modern",
-    heading-font: "New Computer Modern",
-    normal-font: "New Computer Modern",
+    title-font: "Libertinus Serif",
+    heading-font: "Libertinus Serif",
+    normal-font: "Libertinus Serif",
     math-font: "New Computer Modern Math",
     code-font: "DejaVu Sans Mono",
     bio-font: "DejaVu Sans Mono",
-    scaling: ("New Computer Modern": 100%, "New Computer Modern Math": 100%, "DejaVu Sans Mono": 91%),
-    title-size: 20pt,
-    heading-sizes: (13pt, 12pt, 11pt, 10pt),
-    text-size: 10pt,
-    fallback-fonts: false,
+    scaling: (
+        "Libertinus Serif": 100%,
+        "New Computer Modern": 100%,
+        "New Computer Modern Math": 100%,
+        "DejaVu Sans Mono": 80%,
+    ),
+    title-size: 18.7pt, // 1.7em * 11pt
+    heading-sizes: (15.4pt, 13.2pt, 11pt), // 1.4em * 11pt, 1.2em * 11pt, 1em * 11pt
+    text-size: 11pt,
+    fallback-fonts: true,
     fallback-smallcaps: false,
     doc,
 ) = {
@@ -57,7 +75,7 @@
     )
     // Poor man's set-rule.
     context {
-        assert.eq(_font-info-state.get(), none, message: "Cannot call `style` twice.")
+        assert.eq(_font-info-state.get(), none, message: "Cannot call `fonts` twice.")
         _font-info-state.update(font-info-to-set)
     }
 
@@ -73,7 +91,8 @@
             body
         })
     show math.equation: set text(font: math-font, size: 1em * scaling.at(math-font))
-    show raw: set text(font: code-font, size: 1em * scaling.at(code-font))
+    // 1.25em default because the default `raw` size is `0.8em`, see https://github.com/typst/typst/issues/1331
+    show raw: set text(font: code-font, size: 1.25em * scaling.at(code-font))
 
     // Misc
     set text(fallback: fallback-fonts)
@@ -81,6 +100,67 @@
     show title: set text(hyphenate: false)
     show smallcaps: it => if fallback-smallcaps { text(size: 0.8em, upper(it)) } else { it }
 
+    doc
+}
+
+// Sets the page composition – the spacing of all the text.
+//
+/// By default this just recapitulates Typst defaults. However my own favourite choices for academic writing are:
+/// ```typst
+/// #show: composition.with(
+///     justify: true,
+///     par-spacing: 1.3em,
+///     margin: (top: 40pt, x: 40pt, bottom: 60pt),
+///     heading-spacings: (
+///         (above: 24pt, below: 8pt),
+///         (above: 16pt, below: 8pt),
+///         (above: 10pt, below: 8pt),
+///     )
+/// )
+/// ```
+#let composition(
+    justify: false,
+    par-spacing: 1.2em,
+    margin: 2.5cm,
+    // Defaults taken from
+    // https://github.com/typst/typst/blob/6b9b78596a6103dfbcadafaeb03eda624da5306a/crates/typst-library/src/model/heading.rs#L313-L314
+    heading-spacings: (
+        (above: 1.8em / 1.4, below: 0.75em / 1.4),
+        (above: 1.44em / 1.2, below: 0.75em / 1.2),
+        (above: 1.44em, below: 0.75em),
+    ),
+    doc,
+) = {
+    set par(justify: justify, spacing: par-spacing)
+    set page(margin: margin)
+
+    let last-heading-spacing = heading-spacings.at(-1)
+    show heading: set block(above: last-heading-spacing.above, below: last-heading-spacing.below)
+    show: body => heading-spacings
+        .slice(0, -1)
+        .enumerate(start: 1)
+        .fold(body, (body, (level, heading-spacing)) => {
+            show heading.where(level: level): set block(above: heading-spacing.above, below: heading-spacing.below)
+            body
+        })
+    doc
+}
+
+/// Sets the numberings for various elements in the document.
+///
+/// By default this just recapitulates Typst defaults. However my own favourite choices for academic writing are:
+/// ```typst
+/// #show: numberings.with(page: "1", heading: "1.1")
+/// ```
+#let numberings(
+    page: none,
+    heading: none,
+    footnote: "1",
+    doc,
+) = {
+    set std.page(numbering: page)
+    set std.heading(numbering: heading)
+    set std.footnote(numbering: footnote)
     doc
 }
 
@@ -129,14 +209,6 @@
 ) = {
     // Metadata
     set document(title: title)
-
-    // Numbering
-    set page(numbering: "1")
-    set heading(numbering: "1.1")
-
-    // Layout
-    set par(justify: true)
-    set page("a4", margin: (top: 40pt, x: 40pt, bottom: 60pt))
 
     // Header
     set page(

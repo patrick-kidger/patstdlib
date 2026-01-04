@@ -1,5 +1,5 @@
 #import "algorithms.typ"
 #import "enum.typ": enable-referable-enums, referable-enum
-#import "figure.typ": labeled-figure, subfigure, enable-referable-subfigures
-#import "misc.typ": TODO, CITE, dd, partial, sigfig
-#import "style.typ": fonts, topmatter, appendix, as-bio, as-code, as-normal, as-math, font-info
+#import "figure.typ": enable-referable-subfigures, labeled-figure, subfigure
+#import "misc.typ": CITE, TODO, dd, partial, sigfig
+#import "style.typ": appendix, as-bio, as-code, as-math, as-normal, composition, font-info, fonts, numberings, topmatter
