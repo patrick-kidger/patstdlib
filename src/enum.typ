@@ -1,12 +1,9 @@
-#import "@preview/typsy:0.2.1": safe-counter
-
 //
 // Referable enums
 // Adapted from https://github.com/typst/typst/issues/779#issuecomment-2595880447
 //
 
-#let _state-referable-enum = state("254062f63911459cb0ff8f4d1bd47553", none)
-#let _counter-referable-enum = safe-counter(() => {})
+#let _state-referable-enum = state("71aaa466d3db44ad944003aceb989df3", none)
 // Both arguments assumed to be strings.
 #let _get-greatest-suffix(sample1, sample2) = {
     let suffix = ("",)
@@ -42,20 +39,21 @@
 /// - doc (content): Content
 /// -> content
 #let referable-enum(supplement, doc) = context {
-    let current-numbering = enum.numbering
     assert(enum.full, message: "Only `enum.full = true` is supported right now. Add `#set enum(full: true)`.")
-    let wrap-numbering(..it) = {
-        _counter-referable-enum.update(it.pos())
-        numbering(current-numbering, ..it)
-    }
-    set enum(numbering: wrap-numbering)
 
+    let current-numbering = enum.numbering
     let sample1 = numbering(current-numbering, 1)
     let sample2 = numbering(current-numbering, 2)
     let suffix = _get-greatest-suffix(sample1, sample2)
+    let wrap-numbering(..it) = {
+        let numbers = numbering(current-numbering, ..it)
+        _state-referable-enum.update(supplement + [~] + _remove-suffix(numbers, suffix))
+        numbers
+    }
+    set enum(numbering: wrap-numbering)
 
-    _state-referable-enum.update((supplement, suffix, current-numbering))
     doc
+    _state-referable-enum.update(none)
 }
 
 
@@ -66,10 +64,8 @@
         let el = it.element
         if el != none and el.func() == text and _state-referable-enum.at(el.location()) != none {
             let loc = el.location()
-            let (supplement, suffix, current-numbering) = _state-referable-enum.at(loc)
-            let numbers = numbering(current-numbering, .._counter-referable-enum.at(loc))
-            // Override enum references.
-            link(loc, supplement + [~] + _remove-suffix(numbers, suffix))
+            let numbers = _state-referable-enum.at(loc)
+            link(loc, numbers)
         } else {
             // Other references as usual.
             it
