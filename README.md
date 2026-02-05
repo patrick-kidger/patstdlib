@@ -14,6 +14,7 @@ Here's a few highlights:
 
 ```typst
 #show: enable-referable-enums
+#set enum(full: true)
 
 #referable-enum("step")[
   + Foo
@@ -29,7 +30,6 @@ In @step:baz then ...
 
 ```typst
 #show: enable-referable-subfigures
-#set enum(full: true)
 
 #figure(
   caption: [Main caption],
