@@ -1,7 +1,7 @@
 #let _font-info-state = state("7e79ee62c4164f44af4c01f139a93236", none)
 #let font-info() = {
     let x = _font-info-state.get()
-    assert.ne(x, none, message: "Must call `#show: style` first.")
+    assert.ne(x, none, message: "Must call `#show: fonts` first.")
     x
 }
 #let _as-font(font-type, body) = context {
@@ -164,12 +164,13 @@
     doc
 }
 
+#let _title = title
 /// A simple style for the top matter.
 ///
 /// *Example:*
 ///
 /// ```typst
-/// #show: style.with(
+/// #show: topmatter.with(
 ///   title: [How to foobar],
 ///   authors: (
 ///     (
