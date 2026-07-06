@@ -306,13 +306,44 @@
 /// ```
 ///
 /// - title (none, content): the title to place at the start of the appendix.
+/// - numbering (str, function): the numbering for `heading`s.
+/// - supplement (str): the supplement for `heading`s.
 /// -> content
-#let appendix(title: auto, doc) = {
+#let appendix(title: auto, numbering: "A.1", supplement: "Appendix", doc) = {
     place.flush()
-    pagebreak()
-    set heading(numbering: "A.1", supplement: "Appendix")
+    pagebreak(weak: true)
+    set heading(numbering: numbering, supplement: supplement)
     counter(heading).update(0)
     assert.ne(title, auto, message: "Must specify a title: `#show appendix.with(title: ...)`.")
     if title != none { std.title(title) }
     doc
 }
+
+/// Arranges for all headings to include their `supplement` in their name.
+///
+/// This is expected to be particularly useful for certain kinds of appendices.
+///
+/// *Usage:*
+///
+/// ```typst
+/// #show: section-prefixed-by-supplement
+/// ```
+#let section-prefixed-by-supplement(it) = {
+    show heading: it => [#it.supplement #box(it)]
+    it
+}
+
+/// Arranges for all level-1 headings to start on a new page.
+///
+/// This is expected to be particularly useful for certain kinds of appendices.
+///
+/// *Usage:*
+///
+/// ```typst
+/// #show: section-starts-on-new-page
+/// ```
+#let section-starts-on-new-page(it) = {
+    show heading.where(level: 1): it => {pagebreak(weak: true); it}
+    it
+}
+
