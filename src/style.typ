@@ -6,10 +6,11 @@
     assert.ne(x, none, message: "Must call `#show: fonts` first.")
     x
 }
+#let _font-scale(font, scaling) = scaling.at(if type(font) == array { font.first() } else { font })
 #let _as-font(font-type, body) = context {
     let fi = font-info()
     let font = fi.at(font-type)
-    let size = 1em * (fi.scaling.at(font) / fi.scaling.at(text.font))
+    let size = 1em * (_font-scale(font, fi.scaling) / _font-scale(text.font, fi.scaling))
     text(font: font, size: size, body)
 }
 #let as-normal(body) = _as-font("normal-font", body)
@@ -31,6 +32,9 @@
 ///     fallback-fonts: false,
 /// )
 /// ```
+/// Each font argument may also be an array of fallback fonts, such as
+/// `normal-font: ("Libertinus Serif", "New Computer Modern")`. All fonts in
+/// an array must have the same value in `scaling`.
 #let fonts(
     title-font: "Libertinus Serif",
     heading-font: "Libertinus Serif",
@@ -51,18 +55,40 @@
     fallback-smallcaps: false,
     doc,
 ) = {
-    // Normalize to lower, which is how `context text.font` is stored.
-    title-font = lower(title-font)
-    heading-font = lower(heading-font)
-    normal-font = lower(normal-font)
-    math-font = lower(math-font)
-    code-font = lower(code-font)
-    bio-font = lower(bio-font)
+    // Normalize to arrays of lower-case names, which is how `context text.font` is stored.
+    let normalize-fonts(font) = {
+        let fonts = if type(font) == array { font } else { (font,) }
+        fonts.map(lower)
+    }
+    title-font = normalize-fonts(title-font)
+    heading-font = normalize-fonts(heading-font)
+    normal-font = normalize-fonts(normal-font)
+    math-font = normalize-fonts(math-font)
+    code-font = normalize-fonts(code-font)
+    bio-font = normalize-fonts(bio-font)
     let scaling2 = (:)
     for (k, v) in scaling.pairs() {
         scaling2.insert(lower(k), v)
     }
     scaling = scaling2
+    let font-scale(name, fonts) = {
+        assert(fonts.len() > 0, message: "`" + name + "` must contain at least one font.")
+        let scale = scaling.at(fonts.first())
+        for font in fonts.slice(1) {
+            assert.eq(
+                scaling.at(font),
+                scale,
+                message: "All fonts in `" + name + "` must have the same value in `scaling`.",
+            )
+        }
+        scale
+    }
+    let title-scale = font-scale("title-font", title-font)
+    let heading-scale = font-scale("heading-font", heading-font)
+    let normal-scale = font-scale("normal-font", normal-font)
+    let math-scale = font-scale("math-font", math-font)
+    let code-scale = font-scale("code-font", code-font)
+    let _ = font-scale("bio-font", bio-font)
     let font-info-to-set = (
         title-font: title-font,
         heading-font: heading-font,
@@ -81,17 +107,17 @@
         _font-info-state.update(font-info-to-set)
     }
 
-    set text(font: normal-font, size: text-size * scaling.at(normal-font), fallback: fallback-fonts)
+    set text(font: normal-font, size: text-size * normal-scale, fallback: fallback-fonts)
 
-    show title: set text(font: title-font, size: title-size * scaling.at(title-font), hyphenate: false)
-    show heading: set text(font: heading-font, size: heading-sizes.last() * scaling.at(heading-font))
-    show math.equation: set text(font: math-font, size: 1em * scaling.at(math-font))
+    show title: set text(font: title-font, size: title-size * title-scale, hyphenate: false)
+    show heading: set text(font: heading-font, size: heading-sizes.last() * heading-scale)
+    show math.equation: set text(font: math-font, size: 1em * math-scale)
     // 1.25em default because the default `raw` size is `0.8em`, see https://github.com/typst/typst/issues/1331
-    show raw: set text(font: code-font, size: 1.25em * scaling.at(code-font))
+    show raw: set text(font: code-font, size: 1.25em * code-scale)
     show title: set par(justify: false)
     let dynamic-rules = ()
     for (level, size) in heading-sizes.enumerate(start: 1) {
-        dynamic-rules.push(show-set-rule(heading.where(level: level), text, size: size * scaling.at(heading-font)))
+        dynamic-rules.push(show-set-rule(heading.where(level: level), text, size: size * heading-scale))
     }
     if fallback-smallcaps {
         dynamic-rules.push(show-fn-rule(smallcaps, it => text(size: 0.8em, upper(it))))
