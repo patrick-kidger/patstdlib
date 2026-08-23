@@ -1,3 +1,5 @@
+#import "./show.typ": activate-show-rules, show-fn-rule, show-set-rule
+
 #let _font-info-state = state("7e79ee62c4164f44af4c01f139a93236", none)
 #let font-info() = {
     let x = _font-info-state.get()
@@ -79,26 +81,22 @@
         _font-info-state.update(font-info-to-set)
     }
 
-    // Font sizes
-    set text(font: normal-font, size: text-size * scaling.at(normal-font))
-    show title: set text(font: title-font, size: title-size * scaling.at(title-font))
+    set text(font: normal-font, size: text-size * scaling.at(normal-font), fallback: fallback-fonts)
+
+    show title: set text(font: title-font, size: title-size * scaling.at(title-font), hyphenate: false)
     show heading: set text(font: heading-font, size: heading-sizes.last() * scaling.at(heading-font))
-    show: body => heading-sizes
-        .slice(0, -1)
-        .enumerate(start: 1)
-        .fold(body, (body, (level, size)) => {
-            show heading.where(level: level): set text(size: size * scaling.at(heading-font))
-            body
-        })
     show math.equation: set text(font: math-font, size: 1em * scaling.at(math-font))
     // 1.25em default because the default `raw` size is `0.8em`, see https://github.com/typst/typst/issues/1331
     show raw: set text(font: code-font, size: 1.25em * scaling.at(code-font))
-
-    // Misc
-    set text(fallback: fallback-fonts)
     show title: set par(justify: false)
-    show title: set text(hyphenate: false)
-    show smallcaps: it => if fallback-smallcaps { text(size: 0.8em, upper(it)) } else { it }
+    let dynamic-rules = ()
+    for (level, size) in heading-sizes.enumerate(start: 1) {
+        dynamic-rules.push(show-set-rule(heading.where(level: level), text, size: size * scaling.at(heading-font)))
+    }
+    if fallback-smallcaps {
+        dynamic-rules.push(show-fn-rule(smallcaps, it => text(size: 0.8em, upper(it))))
+    }
+    show: activate-show-rules.with(dynamic-rules)
 
     doc
 }
@@ -136,13 +134,11 @@
 
     let last-heading-spacing = heading-spacings.at(-1)
     show heading: set block(above: last-heading-spacing.above, below: last-heading-spacing.below)
-    show: body => heading-spacings
-        .slice(0, -1)
-        .enumerate(start: 1)
-        .fold(body, (body, (level, heading-spacing)) => {
-            show heading.where(level: level): set block(above: heading-spacing.above, below: heading-spacing.below)
-            body
-        })
+    let dynamic-rules = ()
+    for (level, heading-spacing) in heading-spacings.enumerate(start: 1) {
+        dynamic-rules.push(show-set-rule(heading.where(level: level), block, above: heading-spacing.above, below: heading-spacing.below))
+    }
+    show: activate-show-rules.with(dynamic-rules)
     doc
 }
 
@@ -343,7 +339,10 @@
 /// #show: section-starts-on-new-page
 /// ```
 #let section-starts-on-new-page(it) = {
-    show heading.where(level: 1): it => {pagebreak(weak: true); it}
+    show heading.where(level: 1): it => {
+        pagebreak(weak: true)
+        it
+    }
     it
 }
 
