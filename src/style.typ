@@ -116,7 +116,7 @@
     show raw: set text(font: code-font, size: 1.25em * code-scale)
     show title: set par(justify: false)
     let dynamic-rules = ()
-    for (level, size) in heading-sizes.enumerate(start: 1) {
+    for (level, size) in heading-sizes.slice(0, -1).enumerate(start: 1) {
         dynamic-rules.push(show-set-rule(heading.where(level: level), text, size: size * heading-scale))
     }
     if fallback-smallcaps {
@@ -161,7 +161,7 @@
     let last-heading-spacing = heading-spacings.at(-1)
     show heading: set block(above: last-heading-spacing.above, below: last-heading-spacing.below)
     let dynamic-rules = ()
-    for (level, heading-spacing) in heading-spacings.enumerate(start: 1) {
+    for (level, heading-spacing) in heading-spacings.slice(0, -1).enumerate(start: 1) {
         dynamic-rules.push(show-set-rule(heading.where(level: level), block, above: heading-spacing.above, below: heading-spacing.below))
     }
     show: activate-show-rules.with(dynamic-rules)
